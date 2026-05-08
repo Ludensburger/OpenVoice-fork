@@ -34,7 +34,7 @@ zh_source_se = torch.load(f'{zh_ckpt_base}/zh_default_se.pth').to(device)
 # This online demo mainly supports English and Chinese
 supported_languages = ['zh', 'en']
 
-def predict(prompt, style, audio_file_pth, agree):
+def predict(prompt, style, speed, audio_file_pth, agree):
     # initialize a empty info
     text_hint = ''
     # agree with the terms
@@ -129,7 +129,7 @@ def predict(prompt, style, audio_file_pth, agree):
         )
 
     src_path = f'{output_dir}/tmp.wav'
-    tts_model.tts(prompt, src_path, speaker=style, language=language)
+    tts_model.tts(prompt, src_path, speaker=style, language=language, speed=speed)
 
     save_path = f'{output_dir}/output.wav'
     # Run the tone color converter
@@ -244,6 +244,14 @@ with gr.Blocks(analytics_enabled=False) as demo:
                 max_choices=1,
                 value="default",
             )
+            speed_gr = gr.Slider(
+                label="Speed",
+                minimum=0.5,
+                maximum=1.5,
+                value=0.85,
+                step=0.05,
+                info="0.80-0.90 = slower, more natural; 1.0 = normal",
+            )
             ref_gr = gr.Audio(
                 label="Reference Audio (Click edit icon to upload)",
                 type="filepath",
@@ -269,7 +277,7 @@ with gr.Blocks(analytics_enabled=False) as demo:
                         outputs=[out_text_gr, audio_gr, ref_audio_gr],
                         fn=predict,
                         cache_examples=False,)
-            tts_button.click(predict, [input_text_gr, style_gr, ref_gr, tos_gr], outputs=[out_text_gr, audio_gr, ref_audio_gr])
+            tts_button.click(predict, [input_text_gr, style_gr, speed_gr, ref_gr, tos_gr], outputs=[out_text_gr, audio_gr, ref_audio_gr])
 
 demo.queue()  
 demo.launch(debug=True, share=args.share)

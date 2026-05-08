@@ -52,9 +52,10 @@ def main():
     # Generate speech
     os.makedirs("outputs", exist_ok=True)
     temp_path = "outputs/temp_v2.wav"
+    SPEED = 0.85  # 0.80-0.90 range
     
-    print("Generating speech...")
-    model.tts_to_file(text=TEXT_CONTENT, speaker_id=speaker_id, speed=1.0, output_path=temp_path)
+    print(f"Generating speech at speed {SPEED}...")
+    model.tts_to_file(text=TEXT_CONTENT, speaker_id=speaker_id, speed=SPEED, output_path=temp_path)
     
     # Convert to your voice - lower tau = more like your voice
     print("Converting to your voice...")
