@@ -102,16 +102,17 @@ def predict(prompt, style, audio_file_pth, agree):
             None,
             None,
         )
-    if len(prompt) > 200:
-        text_hint += f"[ERROR] Text length limited to 200 characters for this demo, please try shorter text. You can clone our open-source repo and try for your usage \n"
-        gr.Warning(
-            "Text length limited to 200 characters for this demo, please try shorter text. You can clone our open-source repo for your usage"
-        )
-        return (
-            text_hint,
-            None,
-            None,
-        )
+    # Removed 200 char limit - no limit now!
+    # if len(prompt) > 200:
+    #     text_hint += f"[ERROR] Text length limited to 200 characters for this demo, please try shorter text. You can clone our open-source repo and try for your usage \n"
+    #     gr.Warning(
+    #         "Text length limited to 200 characters for this demo, please try shorter text. You can clone our open-source repo for your usage"
+    #     )
+    #     return (
+    #         text_hint,
+    #         None,
+    #         None,
+    #     )
     
     # note diffusion_conditioning not used on hifigan (default mode), it will be empty but need to pass it to model.inference
     try:
@@ -233,7 +234,7 @@ with gr.Blocks(analytics_enabled=False) as demo:
         with gr.Column():
             input_text_gr = gr.Textbox(
                 label="Text Prompt",
-                info="One or two sentences at a time is better. Up to 200 text characters.",
+                info="Enter any length of text - no limit!",
                 value="He hoped there would be stew for dinner, turnips and carrots and bruised potatoes and fat mutton pieces to be ladled out in thick, peppered, flour-fattened sauce.",
             )
             style_gr = gr.Dropdown(
@@ -244,8 +245,7 @@ with gr.Blocks(analytics_enabled=False) as demo:
                 value="default",
             )
             ref_gr = gr.Audio(
-                label="Reference Audio",
-                info="Click on the ✎ button to upload your own target speaker audio",
+                label="Reference Audio (Click edit icon to upload)",
                 type="filepath",
                 value="resources/demo_speaker2.mp3",
             )
@@ -272,4 +272,4 @@ with gr.Blocks(analytics_enabled=False) as demo:
             tts_button.click(predict, [input_text_gr, style_gr, ref_gr, tos_gr], outputs=[out_text_gr, audio_gr, ref_audio_gr])
 
 demo.queue()  
-demo.launch(debug=True, show_api=True, share=args.share)
+demo.launch(debug=True, share=args.share)
