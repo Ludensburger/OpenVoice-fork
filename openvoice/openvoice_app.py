@@ -34,7 +34,7 @@ zh_source_se = torch.load(f'{zh_ckpt_base}/zh_default_se.pth').to(device)
 # This online demo mainly supports English and Chinese
 supported_languages = ['zh', 'en']
 
-def predict(prompt, style, speed, audio_file_pth, agree):
+def predict(prompt, style, audio_file_pth, agree):
     # initialize a empty info
     text_hint = ''
     # agree with the terms
@@ -102,17 +102,16 @@ def predict(prompt, style, speed, audio_file_pth, agree):
             None,
             None,
         )
-    # Removed 200 char limit - no limit now!
-    # if len(prompt) > 200:
-    #     text_hint += f"[ERROR] Text length limited to 200 characters for this demo, please try shorter text. You can clone our open-source repo and try for your usage \n"
-    #     gr.Warning(
-    #         "Text length limited to 200 characters for this demo, please try shorter text. You can clone our open-source repo for your usage"
-    #     )
-    #     return (
-    #         text_hint,
-    #         None,
-    #         None,
-    #     )
+    if len(prompt) > 200:
+        text_hint += f"[ERROR] Text length limited to 200 characters for this demo, please try shorter text. You can clone our open-source repo and try for your usage \n"
+        gr.Warning(
+            "Text length limited to 200 characters for this demo, please try shorter text. You can clone our open-source repo for your usage"
+        )
+        return (
+            text_hint,
+            None,
+            None,
+        )
     
     # note diffusion_conditioning not used on hifigan (default mode), it will be empty but need to pass it to model.inference
     try:
@@ -129,7 +128,7 @@ def predict(prompt, style, speed, audio_file_pth, agree):
         )
 
     src_path = f'{output_dir}/tmp.wav'
-    tts_model.tts(prompt, src_path, speaker=style, language=language, speed=speed)
+    tts_model.tts(prompt, src_path, speaker=style, language=language)
 
     save_path = f'{output_dir}/output.wav'
     # Run the tone color converter
@@ -234,7 +233,7 @@ with gr.Blocks(analytics_enabled=False) as demo:
         with gr.Column():
             input_text_gr = gr.Textbox(
                 label="Text Prompt",
-                info="Enter any length of text - no limit!",
+                info="One or two sentences at a time is better. Up to 200 text characters.",
                 value="He hoped there would be stew for dinner, turnips and carrots and bruised potatoes and fat mutton pieces to be ladled out in thick, peppered, flour-fattened sauce.",
             )
             style_gr = gr.Dropdown(
@@ -244,16 +243,9 @@ with gr.Blocks(analytics_enabled=False) as demo:
                 max_choices=1,
                 value="default",
             )
-            speed_gr = gr.Slider(
-                label="Speed",
-                minimum=0.5,
-                maximum=1.5,
-                value=0.85,
-                step=0.05,
-                info="0.80-0.90 = slower, more natural; 1.0 = normal",
-            )
             ref_gr = gr.Audio(
-                label="Reference Audio (Click edit icon to upload)",
+                label="Reference Audio",
+                info="Click on the ✎ button to upload your own target speaker audio",
                 type="filepath",
                 value="resources/demo_speaker2.mp3",
             )
@@ -277,7 +269,7 @@ with gr.Blocks(analytics_enabled=False) as demo:
                         outputs=[out_text_gr, audio_gr, ref_audio_gr],
                         fn=predict,
                         cache_examples=False,)
-            tts_button.click(predict, [input_text_gr, style_gr, speed_gr, ref_gr, tos_gr], outputs=[out_text_gr, audio_gr, ref_audio_gr])
+            tts_button.click(predict, [input_text_gr, style_gr, ref_gr, tos_gr], outputs=[out_text_gr, audio_gr, ref_audio_gr])
 
 demo.queue()  
-demo.launch(debug=True, share=args.share)
+demo.launch(debug=True, show_api=True, share=args.share)

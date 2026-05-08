@@ -157,7 +157,16 @@ def split_audio_vad(audio_path, audio_name, target_dir, split_seconds=10.0):
     return wavs_folder
 
 def hash_numpy_array(audio_path):
-    array, _ = librosa.load(audio_path, sr=None, mono=True)
+    # Convert to clean WAV first using pydub (handles problematic FLAC files)
+    audio = AudioSegment.from_file(audio_path)
+    audio = audio.set_channels(1).set_frame_rate(16000)
+    import io
+    buf = io.BytesIO()
+    audio.export(buf, format='wav')
+    buf.seek(0)
+    
+    import soundfile as sf
+    array, sr = sf.read(buf)
     # Convert the array to bytes
     array_bytes = array.tobytes()
     # Calculate the hash of the array bytes
