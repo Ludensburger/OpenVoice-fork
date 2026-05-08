@@ -14,12 +14,45 @@ import librosa
 from whisper_timestamped.transcribe import get_audio_tensor, get_vad_segments
 
 model_size = "medium"
-# Run on GPU with FP16
+# Run on CPU (no GPU available)
+device = "cpu"
+compute_type = "int8"  # CPU-friendly
 model = None
+
+# Limit audio file size (max 5 minutes, 16kHz)
+MAX_AUDIO_SECONDS = 300
+MAX_AUDIO_SIZE_MB = 50
+
+def preprocess_audio(input_path, output_path, max_seconds=MAX_AUDIO_SECONDS):
+    """Resample and limit audio length to prevent memory issues"""
+    audio = AudioSegment.from_file(input_path)
+    audio_dur = audio.duration_seconds
+    
+    # Limit duration
+    if audio_dur > max_seconds:
+        audio = audio[:max_seconds * 1000]
+        print(f"Warning: Audio truncated to {max_seconds} seconds")
+    
+    # Convert to mono, 16kHz (sufficient for VAD)
+    audio = audio.set_channels(1).set_frame_rate(16000)
+    
+    # Export
+    audio.export(output_path, format='wav')
+    return audio.duration_seconds
+
 def split_audio_whisper(audio_path, audio_name, target_dir='processed'):
     global model
     if model is None:
-        model = WhisperModel(model_size, device="cuda", compute_type="float16")
+        model = WhisperModel(model_size, device=device, compute_type=compute_type)
+    
+    # Preprocess to limit size
+    target_folder = os.path.join(target_dir, audio_name)
+    os.makedirs(target_folder, exist_ok=True)
+    preprocessed_path = os.path.join(target_folder, 'preprocessed.wav')
+    
+    preprocess_audio(audio_path, preprocessed_path)
+    audio_path = preprocessed_path
+    
     audio = AudioSegment.from_file(audio_path)
     max_len = len(audio)
 
@@ -75,6 +108,14 @@ def split_audio_whisper(audio_path, audio_name, target_dir='processed'):
 
 
 def split_audio_vad(audio_path, audio_name, target_dir, split_seconds=10.0):
+    # Preprocess to limit size
+    target_folder = os.path.join(target_dir, audio_name)
+    os.makedirs(target_folder, exist_ok=True)
+    preprocessed_path = os.path.join(target_folder, 'preprocessed.wav')
+    
+    preprocess_audio(audio_path, preprocessed_path)
+    audio_path = preprocessed_path
+    
     SAMPLE_RATE = 16000
     audio_vad = get_audio_tensor(audio_path)
     segments = get_vad_segments(
